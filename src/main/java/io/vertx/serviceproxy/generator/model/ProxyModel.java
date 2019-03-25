@@ -65,12 +65,10 @@ public class ProxyModel extends ClassModel {
     }
     // We also allow data object as parameter types if they have a 'public JsonObject toJson()' method
     if (typeInfo.getKind() == ClassKind.DATA_OBJECT) {
-      if (type instanceof DeclaredType) {
-        if (Helper.isJsonifiable(elementUtils, typeUtils, (TypeElement) ((DeclaredType) type).asElement())) {
-          return;
-        }
-        throw new GenException(elem, "type " + typeInfo + " does not have a valid 'public JsonObject toJson()' method.");
+      if (((DataObjectTypeInfo)typeInfo).hasJsonEncoder()) {
+        return;
       }
+      throw new GenException(elem, "type " + typeInfo + " does not have a valid encoder.");
     }
     if (isLegalHandlerAsyncResultType(typeInfo)) {
       if (pos != numParams - 1) {

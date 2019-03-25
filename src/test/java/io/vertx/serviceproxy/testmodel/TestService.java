@@ -16,6 +16,7 @@
 
 package io.vertx.serviceproxy.testmodel;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -92,6 +93,12 @@ public interface TestService {
   void setdataObjectType(Set<TestDataObject> set);
 
   void dataObjectTypeNull(TestDataObject options);
+
+  void dateTimeType(ZonedDateTime dateTime);
+
+  void listDateTimeType(List<ZonedDateTime> list);
+
+  void setDateTimeType(Set<ZonedDateTime> set);
   
   void listdataObjectTypeHavingNullValues(List<TestDataObject> list);
 
@@ -220,6 +227,12 @@ public interface TestService {
   void listDataObjectContainingNullHandler(Handler<AsyncResult<List<TestDataObject>>> resultHandler);
 
   void setDataObjectContainingNullHandler(Handler<AsyncResult<Set<TestDataObject>>> resultHandler);
+
+  void zonedDateTimeHandler(Handler<AsyncResult<ZonedDateTime>> resultHandler);
+
+  void listZonedDateTimeHandler(Handler<AsyncResult<List<ZonedDateTime>>> resultHandler);
+
+  void setZonedDateTimeHandler(Handler<AsyncResult<Set<ZonedDateTime>>> resultHandler);
 
   @ProxyIgnore
   void ignoredMethod();

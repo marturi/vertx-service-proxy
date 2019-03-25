@@ -18,6 +18,7 @@ package io.vertx.serviceproxy.test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -207,6 +208,34 @@ public class ServiceProxyTest extends VertxTestBase {
       new TestDataObject().setString("String foo").setNumber(123).setBool(true),
       new TestDataObject().setString("String bar").setNumber(456).setBool(false)));
     proxy.setdataObjectType(testDataSet);
+    await();
+  }
+
+  @Test
+  public void testDateTimeType() {
+    proxy.dateTimeType(ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"));
+    await();
+  }
+
+  @Test
+  public void testListDateTimeType() {
+    proxy.listDateTimeType(
+      Arrays.asList(
+        ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"),
+        ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]").plusHours(1)
+      )
+    );
+    await();
+  }
+
+  @Test
+  public void testSetDateTimeType() {
+    proxy.setDateTimeType(
+      new HashSet<>(Arrays.asList(
+        ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"),
+        ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]").plusHours(1)
+      ))
+    );
     await();
   }
 
@@ -866,6 +895,39 @@ public class ServiceProxyTest extends VertxTestBase {
       assertEquals(2, setJson.size());
       assertTrue(setJson.contains(new JsonObject().put("number", 1).put("string", "String 1").put("bool", false)));
       assertTrue(setJson.contains(new JsonObject().put("number", 2).put("string", "String 2").put("bool", true)));
+      testComplete();
+    }));
+    await();
+  }
+
+  @Test
+  public void testDateTimeHandler() {
+    proxy.zonedDateTimeHandler(onSuccess(dateTime -> {
+      assertEquals(ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"), dateTime);
+      testComplete();
+    }));
+    await();
+  }
+
+  @Test
+  public void testListDateTimeHandler() {
+    proxy.listZonedDateTimeHandler(onSuccess(list -> {
+      assertEquals(Arrays.asList(
+        ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"),
+        ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]").plusHours(1)
+      ), list);
+      testComplete();
+    }));
+    await();
+  }
+
+  @Test
+  public void testSetDateTimeHandler() {
+    proxy.setZonedDateTimeHandler(onSuccess(set -> {
+      assertEquals(new HashSet<>(Arrays.asList(
+        ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"),
+        ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]").plusHours(1)
+      )), set);
       testComplete();
     }));
     await();

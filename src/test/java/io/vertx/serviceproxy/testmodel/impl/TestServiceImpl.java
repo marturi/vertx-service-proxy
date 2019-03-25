@@ -20,11 +20,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import io.vertx.core.AsyncResult;
@@ -168,7 +165,29 @@ public class TestServiceImpl implements TestService {
     assertNull(options);
     vertx.eventBus().send(ServiceProxyTest.TEST_ADDRESS, "ok");
   }
-  
+
+  @Override
+  public void dateTimeType(ZonedDateTime dateTime) {
+    assertEquals(ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"), dateTime);
+    vertx.eventBus().send(ServiceProxyTest.TEST_ADDRESS, "ok");
+  }
+
+  @Override
+  public void listDateTimeType(List<ZonedDateTime> list) {
+    assertEquals(2, list.size());
+    assertEquals(ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"), list.get(0));
+    assertEquals(ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]").plusHours(1), list.get(1));
+    vertx.eventBus().send(ServiceProxyTest.TEST_ADDRESS, "ok");
+  }
+
+  @Override
+  public void setDateTimeType(Set<ZonedDateTime> set) {
+    assertEquals(2, set.size());
+    assertTrue(set.contains(ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]")));
+    assertTrue(set.contains(ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]").plusHours(1)));
+    vertx.eventBus().send(ServiceProxyTest.TEST_ADDRESS, "ok");
+  }
+
   @Override
   public void listdataObjectTypeHavingNullValues(List<TestDataObject> list) {
     assertEquals(3, list.size());
@@ -612,6 +631,27 @@ public class TestServiceImpl implements TestService {
         null,
         new TestDataObject().setNumber(2).setString("String 2").setBool(true)));
     resultHandler.handle(Future.succeededFuture(set));
+  }
+
+  @Override
+  public void zonedDateTimeHandler(Handler<AsyncResult<ZonedDateTime>> resultHandler) {
+    resultHandler.handle(Future.succeededFuture(ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]")));
+  }
+
+  @Override
+  public void listZonedDateTimeHandler(Handler<AsyncResult<List<ZonedDateTime>>> resultHandler) {
+    resultHandler.handle(Future.succeededFuture(Arrays.asList(
+      ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"),
+      ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]").plusHours(1)
+    )));
+  }
+
+  @Override
+  public void setZonedDateTimeHandler(Handler<AsyncResult<Set<ZonedDateTime>>> resultHandler) {
+    resultHandler.handle(Future.succeededFuture(new HashSet<>(Arrays.asList(
+      ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]"),
+      ZonedDateTime.parse("2019-03-25T17:08:31.069+01:00[Europe/Rome]").plusHours(1)
+    ))));
   }
 
   @Override

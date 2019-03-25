@@ -60,13 +60,6 @@ public class ServiceProxyHandlerGen extends Generator<ProxyModel> {
     return model.getIfaceSimpleName() + "VertxProxyHandler";
   }
 
-  public Stream<String> additionalImports(ProxyModel model) {
-    return model.getImportedTypes()
-      .stream()
-      .filter(c -> !c.getPackageName().equals("java.lang"))
-      .map(ClassTypeInfo::toString);
-  }
-
   @Override
   public String render(ProxyModel model, int index, int size, Map<String, Object> session) {
     StringWriter buffer = new StringWriter();
@@ -77,7 +70,7 @@ public class ServiceProxyHandlerGen extends Generator<ProxyModel> {
     writer.newLine();
     utils.writeImport(writer, model.getIfaceFQCN());
     utils.handlerGenImports(writer);
-    additionalImports(model).forEach(i -> utils.writeImport(writer, i));
+    utils.additionalImports(model).forEach(i -> utils.writeImport(writer, i));
     utils.roger(writer);
     writer
       .code("@SuppressWarnings({\"unchecked\", \"rawtypes\"})\n")
@@ -203,7 +196,7 @@ public class ServiceProxyHandlerGen extends Generator<ProxyModel> {
       String coll = type.getKind() == ClassKind.LIST ? "List" : "Set";
       TypeInfo typeArg = ((ParameterizedTypeInfo)type).getArg(0);
       if (typeArg.getKind() == ClassKind.DATA_OBJECT)
-        return "json.getJsonArray(\"" + name + "\").stream().map(o -> o == null ? null : new " + typeArg.getName() + "((JsonObject)o)).collect(Collectors.to" + coll + "())";
+        return "json.getJsonArray(\"" + name + "\").stream().map(v -> (" + ((DataObjectTypeInfo)typeArg).getTargetJsonType().toString() + ")v).map(" + ((DataObjectTypeInfo)typeArg).getJsonDecoderFQCN() + ".getInstance()::decode).collect(Collectors.to" + coll + "())";
       if (typeArg.getName().equals("java.lang.Byte") || typeArg.getName().equals("java.lang.Short") ||
         typeArg.getName().equals("java.lang.Integer") || typeArg.getName().equals("java.lang.Long"))
         return "json.getJsonArray(\"" + name + "\").stream().map(o -> ((Number)o)." + numericMapping.get(typeArg.getName()) + "Value()).collect(Collectors.to" + coll + "())";
@@ -218,8 +211,16 @@ public class ServiceProxyHandlerGen extends Generator<ProxyModel> {
       return "HelperUtils.convertMap(json.getJsonObject(\"" + name + "\").getMap())";
     }
     if (type.getKind() == ClassKind.DATA_OBJECT)
-      return "json.getJsonObject(\"" + name + "\") == null ? null : new " + type.getName() + "(json.getJsonObject(\"" + name + "\"))";
+      return ((DataObjectTypeInfo)type).getJsonDecoderFQCN() + ".getInstance().decode((" + ((DataObjectTypeInfo)type).getTargetJsonType().getSimpleName() + ")json." + resolveDataObjectJsonExtractorMethod((DataObjectTypeInfo)type) + "(\"" + name + "\"))";
     return "(" + type.getName() + ")json.getValue(\"" + name + "\")";
+  }
+
+  private String resolveDataObjectJsonExtractorMethod(DataObjectTypeInfo info) {
+    if (info.getTargetJsonType().getKind() == ClassKind.JSON_ARRAY)
+      return "getJsonArray";
+    if (info.getTargetJsonType().getKind() == ClassKind.JSON_OBJECT)
+      return "getJsonObject";
+    return "getValue";
   }
 
   public String generateHandler(ParamInfo param) {
@@ -238,7 +239,7 @@ public class ServiceProxyHandlerGen extends Generator<ProxyModel> {
           "                msg.reply(new ServiceException(-1, res.cause().getMessage()));\n" +
           "              }\n" +
           "            } else {\n" +
-          "              msg.reply(new JsonArray(res.result().stream().map(r -> r == null ? null : r.toJson()).collect(Collectors.toList())));\n" +
+          "              msg.reply(new JsonArray(res.result().stream().map(" + ((DataObjectTypeInfo)innerTypeArg).getJsonEncoderFQCN() + ".getInstance()::encode).collect(Collectors.toList())));\n" +
           "            }\n" +
           "         }";
       return "HelperUtils.create" + coll + "Handler(msg)";
@@ -252,7 +253,7 @@ public class ServiceProxyHandlerGen extends Generator<ProxyModel> {
         "                msg.reply(new ServiceException(-1, res.cause().getMessage()));\n" +
         "              }\n" +
         "            } else {\n" +
-        "              msg.reply(res.result() == null ? null : res.result().toJson());\n" +
+        "              msg.reply(" + ((DataObjectTypeInfo)typeArg).getJsonEncoderFQCN() + ".getInstance().encode(res.result()));\n" +
         "            }\n" +
         "         }";
     if (typeArg.getKind() == ClassKind.API && ((ApiTypeInfo)typeArg).isProxyGen())
